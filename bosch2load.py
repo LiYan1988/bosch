@@ -44,9 +44,9 @@ n_test = 1183748
 #
 #save_data(train_numeric, 'train_numeric.pkl')
 
-load_data('train_numeric')
-load_data('train_date')
-load_data('train_categorical')
-load_data('test_numeric')
-load_data('test_date')
-load_data('test_categorical')
+#prepare_data('train_numeric')
+#prepare_data('train_date')
+#prepare_data('train_categorical')
+#prepare_data('test_numeric')
+#prepare_data('test_date')
+#prepare_data('test_categorical')

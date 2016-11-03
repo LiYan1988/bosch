@@ -150,16 +150,31 @@ def read_data(file_name):
 
 def prepare_data(file_name):
     df = []
-    if os.path.exists('input/'+file_name+'.csv'):
-        numeric_chunks = pd.read_csv('input/'+file_name+'.csv', 
-            chunksize=10000)
+    
+    # detect data format
+    file_name_ = 'input/'+file_name+'.csv'
+    if not os.path.exists(file_name_):
+        file_name_ = 'input/'+file_name+'.csv.zip'
+        
+    # detect columns
+    file_part = pd.read_csv(file_name_, nrows=1)
+    cols = file_part.columns.tolist()
+    cols.remove('Id')
+    data_types = {}
+    data_types['Id'] = np.uint32
+    if file_name == 'train_numeric':
+        cols.remove('Response')
+        data_types['Response'] = np.uint8
+    if file_name.split('_')[1] == 'categorical':
+        data_types.update({c: np.str for c in cols})
     else:
-        numeric_chunks = pd.read_csv('input/'+file_name+'.csv.zip', 
-            chunksize=10000)
+        data_types.update({c: np.float16 for c in cols})
 
+    numeric_chunks = pd.read_csv(file_name_, chunksize=10000, dtype=data_types)
     for i, dchunk in enumerate(numeric_chunks):
         df.append(dchunk.to_sparse())
         print(i, df[-1].memory_usage().sum(), dchunk.memory_usage().sum())
+        print(df[-1].Id[-1])
         del dchunk
         gc.collect()
     
