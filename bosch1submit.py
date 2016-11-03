@@ -15,7 +15,7 @@ prior = np.array(np.sum(y) / (1.*len(y)))[0]
 
 clfxgb = xgb.XGBClassifier(objective='binary:logistic', silent=False, 
         seed=0, nthread=-1, gamma=1, subsample=0.8, learning_rate=0.1,
-        n_estimators=150, max_depth=6, base_score=prior)
+        n_estimators=550, max_depth=6, base_score=prior)
 #clfxgb.fit(train_set, y)
 
 #y_test_pred = clfxgb.predict_proba(test_set)[:, 1]
