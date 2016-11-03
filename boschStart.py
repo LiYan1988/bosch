@@ -12,6 +12,8 @@ import pandas as pd
 import gc
 #sns.set_style('whitegrid')
 
+import xgboost as xgb
+
 STATIONS = ['S32', 'S33', 'S34']
 train_date_part = pd.read_csv('input/train_date.csv', nrows=10000)
 date_cols = train_date_part.drop('Id', axis=1).count().reset_index().sort_values(by=0, ascending=False)
