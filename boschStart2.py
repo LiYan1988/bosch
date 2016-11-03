@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import gc
 import matplotlib.pyplot as plt
+import cPickle as pickle
 
 from sklearn import model_selection
 from sklearn.metrics import matthews_corrcoef
@@ -133,7 +134,36 @@ def create_date_features():
     
     train_set.to_csv('train_date_feats.csv')
     test_set.to_csv('test_date_feats.csv')
+    
+def save_data(data, file_name):
+    """File name must ends with .pkl
+    """
+    with open(file_name, 'wb') as f:
+        pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
+        
+def read_data(file_name):
+    with open(file_name, 'rb') as f:
+        data = pickle.load(f)
+        
+    return data
 
+def load_data(file_name):
+    df = []
+    numeric_chunks = pd.read_csv('input/'+file_name+'.csv', 
+        chunksize=10000, dtype=np.float16)
+    for i, dchunk in enumerate(numeric_chunks):
+        df.append(dchunk.to_sparse())
+        print(i, df[-1].memory_usage().sum(), dchunk.memory_usage().sum())
+        del dchunk
+        gc.collect()
+    
+    df = pd.concat(df)
+    print(df.memory_usage().sum())
+
+    save_data(df, file_name+'.pkl')
+    del df
+    gc.collect()
+    
 if __name__=='__main__':
     print('main')
     
