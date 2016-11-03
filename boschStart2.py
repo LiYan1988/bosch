@@ -74,8 +74,8 @@ def save_submission(y_pred, file_name, test_id):
     df.index = list(test_id.values.ravel())
     df.index.name = 'Id'
     df.to_csv(file_name, index=True)
-
-if __name__=='__main__':
+    
+def create_date_features():
     # sample columns
     train_date_part = pd.read_csv('input/train_date.csv', nrows=10000)
     date_cols = train_date_part.drop('Id', axis=1).count().reset_index().\
@@ -133,3 +133,7 @@ if __name__=='__main__':
     
     train_set.to_csv('train_date_feats.csv')
     test_set.to_csv('test_date_feats.csv')
+
+if __name__=='__main__':
+    print('main')
+    
