@@ -10,6 +10,7 @@ import pandas as pd
 import gc
 import matplotlib.pyplot as plt
 import cPickle as pickle
+import os
 
 from sklearn import model_selection
 from sklearn.metrics import matthews_corrcoef
@@ -147,10 +148,15 @@ def read_data(file_name):
         
     return data
 
-def load_data(file_name):
+def prepare_data(file_name):
     df = []
-    numeric_chunks = pd.read_csv('input/'+file_name+'.csv', 
-        chunksize=10000, dtype=np.float16)
+    if os.path.exists('input/'+file_name+'.csv'):
+        numeric_chunks = pd.read_csv('input/'+file_name+'.csv', 
+            chunksize=10000)
+    else:
+        numeric_chunks = pd.read_csv('input/'+file_name+'.csv.zip', 
+            chunksize=10000)
+
     for i, dchunk in enumerate(numeric_chunks):
         df.append(dchunk.to_sparse())
         print(i, df[-1].memory_usage().sum(), dchunk.memory_usage().sum())
