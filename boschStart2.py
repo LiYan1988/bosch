@@ -12,10 +12,15 @@ import matplotlib.pyplot as plt
 import cPickle as pickle
 import os
 from scipy import sparse
+from sys import getsizeof
+import copy
 
-from sklearn import model_selection
 from sklearn.metrics import matthews_corrcoef
 import xgboost as xgb
+from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn import (preprocessing, manifold, decomposition, ensemble,
+                     feature_extraction, model_selection, cross_validation,
+                     calibration, linear_model, metrics, neighbors)
 #from numba import jit
 
 #@jit
@@ -220,6 +225,88 @@ def prepare_selected_features():
     
     save_data(posidx, 'posidx.pkl')
     save_data(negidx, 'negidx.pkl')
+    
+def xgb_predict_proba(clfxgb, x_test):
+    
+    n_test = len(x_test)
+    y_pred = []
+    n_start = 0
+    chunksize = 100000
+    n_chunks = int(np.ceil(1.*n_test/chunksize))
+    for i in range(n_chunks):
+#        print('Predicting {} to {}'.format(n_start, min(n_test, n_start+chunksize)))
+        a = x_test.iloc[np.arange(n_start, min(n_test, n_start+chunksize))]
+        y_pred.append(clfxgb.predict_proba(a)[:,1])
+        n_start += chunksize
+    y_pred = np.concatenate(y_pred)
+    
+    return y_pred
+    
+#def mc_train(clfxgb, x_train, y_train, x_test, n_rep=10, random_state=0):
+#    
+#    np.random.seed(random_state)
+#    posidx = y_train
+
+class MCSClassifier(BaseEstimator, ClassifierMixin):
+    def __init__(self, estimator, n_runs, p_ratio, random_state=0):
+#        self.x_train = x_train
+#        self.y_train = y_train
+#        self.x_test = x_test
+        self.n_runs = n_runs
+        self.estimator = estimator
+        self.p_ratio = p_ratio
+        self.random_state = random_state
+        self.y_pred_samples = []
+        np.random.seed(self.random_state)
+        
+    def one_run_(self, x_train, y_train, x_test):
+        """Fit and predict"""
+        estimator_ = copy.deepcopy(self.estimator)
+        
+        posidx = y_train.Response[y_train.Response==1].index.tolist()
+        negidx = y_train.Response[y_train.Response==0].index.tolist()
+        
+        # the negative samples used in training
+        sample_idx = np.random.choice(negidx, 
+            len(posidx)*int(1./self.p_ratio-1), False)
+        sample_idx = np.sort(np.concatenate((sample_idx, posidx)))
+        
+        x_train_sample = x_train.iloc[sample_idx]
+        y_train_sample = y_train.iloc[sample_idx]
+        if hasattr(estimator_, 'base_score'):
+            prior = np.sum(y_train_sample)/(1.0*len(y_train_sample))
+            prior = prior.iloc[0]
+            estimator_.base_score = prior            
+        y_train_sample = y_train_sample.values.ravel()
+        print(estimator_)
+        estimator_.fit(x_train_sample, y_train_sample)
+        y_pred = self.one_run_predict_(estimator_, x_test)
+        
+        return y_pred        
+        
+    def one_run_predict_(self, estimator_, x_test):
+        n_test = len(x_test)
+        y_pred = []
+        n_start = 0
+        chunksize = 100000
+        n_chunks = int(np.ceil(1.*n_test/chunksize))
+        for i in range(n_chunks):
+#            print('Predicting {} to {}'.format(n_start, min(n_test, n_start+chunksize)))
+            a = x_test.iloc[np.arange(n_start, min(n_test, n_start+chunksize))]
+            y_pred.append(estimator_.predict_proba(a)[:,1])
+            n_start += chunksize
+        y_pred = np.concatenate(y_pred)
+    
+        return y_pred
+        
+    def multi_run(self, x_train, y_train, x_test):
+        y_pred = []
+        for i in range(self.n_runs):
+            print('run {}'.format(i))
+            y_pred.append(self.one_run_(x_train, y_train, x_test))
+        y_pred = np.mean(y_pred, axis=0)
+        
+        return y_pred
     
 if __name__=='__main__':
     print('main')
