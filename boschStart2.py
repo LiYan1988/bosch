@@ -11,6 +11,7 @@ import gc
 import matplotlib.pyplot as plt
 import cPickle as pickle
 import os
+from scipy import sparse
 
 from sklearn import model_selection
 from sklearn.metrics import matthews_corrcoef
@@ -148,11 +149,12 @@ def read_data(file_name):
         
     return data
 
-def prepare_data(file_name):
+def prepare_data(file_name, cols_good, file_save_name):
     df = []
     
     # detect data format
     file_name_ = 'input/'+file_name+'.csv'
+    file_save_name_ = file_save_name+'.pkl'
     if not os.path.exists(file_name_):
         file_name_ = 'input/'+file_name+'.csv.zip'
         
@@ -170,7 +172,13 @@ def prepare_data(file_name):
     else:
         data_types.update({c: np.float16 for c in cols})
 
-    numeric_chunks = pd.read_csv(file_name_, chunksize=10000, dtype=data_types)
+    if cols_good is None:
+        numeric_chunks = pd.read_csv(file_name_, chunksize=10000, 
+            dtype=data_types)
+    else:
+        numeric_chunks = pd.read_csv(file_name_, chunksize=10000, 
+            dtype=data_types, usecols=cols_good)
+        
     for i, dchunk in enumerate(numeric_chunks):
         df.append(dchunk.to_sparse())
         print(i, df[-1].memory_usage().sum(), dchunk.memory_usage().sum())
@@ -181,9 +189,37 @@ def prepare_data(file_name):
     df = pd.concat(df)
     print(df.memory_usage().sum())
 
-    save_data(df, file_name+'.pkl')
+    save_data(df, file_save_name_)
     del df
     gc.collect()
+    
+def prepare_selected_features():
+    x_train = read_data('train_numeric_good.pkl')
+    x_test = read_data('test_numeric_good.pkl')
+    
+    x_train_date = pd.read_csv('train_date_feats.csv')
+    x_train_date.drop(['Unnamed: 0'], axis=1, inplace=True)
+    x_test_date = pd.read_csv('test_date_feats.csv')
+    x_test_date.drop(['Unnamed: 0'], axis=1, inplace=True)
+    
+    x_train.merge(x_train_date, how='left', on='Id')
+    x_test.merge(x_test_date, how='left', on='Id')
+    y_train = pd.read_csv('input/train_numeric.csv', usecols=['Response'], 
+        dtype=np.uint8)
+    
+    save_data(x_train, 'x_train_partcols.pkl')
+    save_data(y_train, 'y_train.pkl')
+    save_data(x_test, 'x_test_partcols.pkl')
+    prior = np.sum(y_train)/(1.0*len(y_train))
+    prior = prior.iloc[0]
+    
+    # indexes of positive samples
+    posidx = y_train.Response[y_train.Response==1].index.tolist()
+    # inexes of negative samples
+    negidx = y_train.Response[y_train.Response==0].index.tolist()
+    
+    save_data(posidx, 'posidx.pkl')
+    save_data(negidx, 'negidx.pkl')
     
 if __name__=='__main__':
     print('main')

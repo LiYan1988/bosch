@@ -15,6 +15,7 @@ cols_good.drop(cols_good.columns[1:], axis=1, inplace=True)
 cols_good['type'] = cols_good['variable'].apply(lambda x: x.split('_')[2][0])
 cols_good_F = list(cols_good.variable[cols_good.type=='F'])
 cols_good_F.remove('L3_S32_F3854')
+cols_good_F.append('Id')
 cols_good_D = list(cols_good.variable[cols_good.type=='D'])
 
 n_train = 1183747
@@ -50,3 +51,5 @@ n_test = 1183748
 #prepare_data('test_numeric')
 #prepare_data('test_date')
 #prepare_data('test_categorical')
+#prepare_data('train_numeric', cols_good_F, 'train_numeric_good')
+prepare_data('test_numeric', cols_good_F, 'test_numeric_good')
