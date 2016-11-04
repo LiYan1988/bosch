@@ -278,7 +278,7 @@ class MCSClassifier(BaseEstimator, ClassifierMixin):
             prior = prior.iloc[0]
             estimator_.base_score = prior            
         y_train_sample = y_train_sample.values.ravel()
-        print(estimator_)
+#        print(estimator_)
         estimator_.fit(x_train_sample, y_train_sample)
         y_pred = self.one_run_predict_(estimator_, x_test)
         
@@ -300,13 +300,16 @@ class MCSClassifier(BaseEstimator, ClassifierMixin):
         return y_pred
         
     def multi_run(self, x_train, y_train, x_test):
-        y_pred = []
+        y_test_pred = None
         for i in range(self.n_runs):
             print('run {}'.format(i))
-            y_pred.append(self.one_run_(x_train, y_train, x_test))
-        y_pred = np.mean(y_pred, axis=0)
+            if y_test_pred is None:
+                y_test_pred = self.one_run_(x_train, y_train, x_test)
+            else:
+                y_test_pred += self.one_run_(x_train, y_train, x_test)
+        y_test_pred /= self.n_runs*1.0
         
-        return y_pred
+        return y_test_pred
     
 if __name__=='__main__':
     print('main')

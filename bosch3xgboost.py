@@ -17,20 +17,23 @@ x_test = read_data('x_test_partcols.pkl')
 posidx = np.array(read_data('posidx.pkl'))
 negidx = np.array(read_data('negidx.pkl'))
 
-#np.random.seed(0)
-#negidx_tmp = np.random.choice(negidx, len(posidx)*9, False)
-#negidx_tmp = np.concatenate((negidx_tmp, posidx))
-#negidx_tmp = np.sort(negidx_tmp)
-#x_train_tmp = x_train.iloc[negidx_tmp]
-#y_train_tmp = y_train.iloc[negidx_tmp]
-#prior = np.sum(y_train_tmp)/(1.0*len(y_train_tmp))
-#prior = prior.iloc[0]
-#y_train_tmp = y_train_tmp.values.ravel()
+np.random.seed(0)
+negidx_tmp = np.random.choice(negidx, len(posidx)*19, False)
+negidx_tmp = np.concatenate((negidx_tmp, posidx))
+negidx_tmp = np.sort(negidx_tmp)
+x_train_tmp = x_train.iloc[negidx_tmp]
+y_train_tmp = y_train.iloc[negidx_tmp]
+prior = np.sum(y_train_tmp)/(1.0*len(y_train_tmp))
+prior = prior.iloc[0]
+y_train_tmp = y_train_tmp.values.ravel()
 #
 clfxgb = xgb.XGBClassifier(objective='binary:logistic', silent=False, 
         seed=0, nthread=-1, gamma=1, subsample=0.6, learning_rate=0.1,
-        n_estimators=50, max_depth=12)
+        n_estimators=150, max_depth=12)
 #clfxgb.fit(x_train_tmp, y_train_tmp)
+
+cv = model_selection.cross_val_score(clfxgb, x_train_tmp, y_train_tmp, 
+    scoring='roc_auc', cv=4, verbose=10)
 ##y_pred = clfxgb.predict_proba(x_train.iloc[:1000])
 #y_pred = []
 #n_start = 0
@@ -44,11 +47,9 @@ clfxgb = xgb.XGBClassifier(objective='binary:logistic', silent=False,
 #    
 #y_pred = np.concatenate(y_pred)
 
-n_runs = 200
-p_ratio = 0.05
-random_state=0
-mcs = MCSClassifier(clfxgb, n_runs, p_ratio, random_state)
-#x_test_tmp = x_test.iloc[np.arange(1, 100)]
-#mcs.one_run_(x_train, y_train, x_test_tmp)
-y_pred = mcs.multi_run(x_train, y_train, x_test)
-save_submission(y_pred, 'mcs_submission.csv', None)
+#n_runs = 200
+#p_ratio = 0.05
+#random_state=0
+#mcs = MCSClassifier(clfxgb, n_runs, p_ratio, random_state)
+#y_pred = mcs.multi_run(x_train, y_train, x_test)
+#save_submission(y_pred, 'mcs_submission.csv', None)
