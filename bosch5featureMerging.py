@@ -21,11 +21,12 @@ Response = pd.read_csv('input/train_numeric.csv', usecols=['Response'],
 feat_cat_cnt = []
 #feat_cat_frq = []
 for i, c in enumerate(cols):
-    print('Processing column {}, {}'.format(i, c))
     feat_cat = pd.read_csv('input/train_categorical.csv', usecols=[c], 
                            dtype=np.str)
     feat_cat['Response'] = Response.values
     feat_cat_cnt.append(feat_cat.groupby(c)['Response'].count().reset_index())
+    print('Processed column {}, {}, {} positive responses'.format(i, c, 
+          feat_cat_cnt[-1].Response.sum()))
 #    feat_cat_frq.append(feat_cat.groupby(c)['Response'].mean())
 #    if i > 2:
 #        break
