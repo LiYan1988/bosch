@@ -20,7 +20,8 @@ import xgboost as xgb
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn import (preprocessing, manifold, decomposition, ensemble,
                      feature_extraction, model_selection, cross_validation,
-                     calibration, linear_model, metrics, neighbors)
+                     calibration, linear_model, metrics, neighbors, 
+                     naive_bayes)
 #from numba import jit
 
 #@jit
