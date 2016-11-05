@@ -96,6 +96,7 @@ def create_date_features():
     train_start_date = pd.read_csv('input/train_date.csv', 
         usecols=['Id']+date_cols)
     train_start_date['start_date'] = train_start_date[date_cols].min(axis=1)
+#    train_start_date['end_date]
     train_start_date.drop(date_cols, axis=1, inplace=True)
     n_train = train_start_date.shape[0]
     # test start date
