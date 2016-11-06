@@ -75,7 +75,7 @@ cols = pd.merge(nz_freq_big, nz_freq_good, how='outer',
 #nz_max['count'].astype(int)
 
 # experiment naive bayes
-x_train = pd.read_csv('input/train_numeric.csv', nrows=10000, 
-                      usecols=['Id', 'Response'].extend(list(cols.feature)))
-y_train = x_train.Response
-x_train.drop(Response, axis=1, inplace=True)
+#x_train = pd.read_csv('input/train_numeric.csv', nrows=10000, 
+#                      usecols=['Id', 'Response'].extend(list(cols.feature)))
+#y_train = x_train.Response
+#x_train.drop(Response, axis=1, inplace=True)

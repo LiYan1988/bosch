@@ -80,7 +80,9 @@ def save_submission(y_pred, file_name, test_id):
     df = pd.DataFrame(data=y_pred, columns=['Response'])
     if test_id is None:
         test_id = pd.read_csv('input/test_numeric.csv', usecols=['Id'])
-    df.index = list(test_id.values.ravel())
+        df.index = list(test_id.values.ravel())
+    else:
+        df.index = test_id
     df.index.name = 'Id'
     df.to_csv(file_name, index=True)
     
@@ -243,11 +245,6 @@ def xgb_predict_proba(clfxgb, x_test):
     y_pred = np.concatenate(y_pred)
     
     return y_pred
-    
-#def mc_train(clfxgb, x_train, y_train, x_test, n_rep=10, random_state=0):
-#    
-#    np.random.seed(random_state)
-#    posidx = y_train
 
 class MCSClassifier(BaseEstimator, ClassifierMixin):
     def __init__(self, estimator, n_runs, p_ratio, random_state=0):
@@ -313,6 +310,60 @@ class MCSClassifier(BaseEstimator, ClassifierMixin):
         
         return y_test_pred
     
+def create_bag_features(out_indexes, id_window_sizes=[3, 5, 7, 9],
+                        time_window_sizes=[0.01, 0.05, 0.1, 0.5]):
+    """Create leave out features, leave some train samples out to create these
+    features. Out of Bag features are used to create meta features, in bag 
+    features are used to predict.
+    """
+    train_test = pd.read_csv('train_test_date.csv')
+    train_id = pd.read_csv('train_date_pure.csv', usecols=['Id']).Id.values
+    # the in bag indexes 
+    in_index = np.setdiff1d(train_id, out_indexes)
+    Response_true = \
+        train_test.loc[train_test.Id.isin(in_index), 'Response'].copy()
+    train_test.loc[train_test.Id.isin(in_index), 'Response'] = 0
+    train_test.sort_values(by='Id', ascending=True, inplace=True)
+    for w in id_window_sizes:
+        train_test['id_window_'+str(w)] = \
+                   train_test.Response.rolling(window=10, min_periods=1, 
+                                               center=True).sum()
+        
+    for j, w in enumerate(time_window_sizes):
+        n_bins = int(1718.48/w)
+        train_test['tmp'] = pd.cut(train_test['min_date'], bins=n_bins, 
+            labels=np.arange(n_bins))
+        binned = train_test.groupby('tmp')['Response'].sum().\
+            fillna(0).to_frame()
+        train_test = pd.merge(train_test, binned, how='left', left_on='tmp',
+                             right_index=True, 
+                             suffixes=('', '_t_window_'+str(j)))
+        train_test.drop('tmp', axis=1, inplace=True)
+        cols = list(train_test.columns)
+        cols[-1] = 't_window_'+str(j)
+        train_test.columns = cols
+        del binned
+        gc.collect()
+        
+    train_test.loc[train_test.Id.isin(in_index), 'Response'] = Response_true
+        
+    return train_test
+    
+#class MetaBagClassifier(BaseEstimator, ClassifierMixin):
+#    def __init__(self, meta_estimators, estimators, n_runs, bag_size, 
+#                 random_state=0):
+#        self.meta_estimators = meta_estimators
+#        self.estimators = estimators
+#        self.n_runs = n_runs
+#        self.bag_size = bag_size
+#        self.random_state = random_state
+#        self.train_test = pd.read_csv('train_test_date.csv')
+#        self.train_id = pd.read_csv('train_date_pure.csv', usecols=['Id']).Id.values
+#        self.test_id = pd.read_csv('test_date_pure.csv', usecols=['Id']).Id.values
+#        
+#    def fit(x_train=None, y_train=None):
+        
+        
 if __name__=='__main__':
     print('main')
     
