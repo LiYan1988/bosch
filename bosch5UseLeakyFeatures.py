@@ -7,11 +7,14 @@ Created on Sun Nov 06 18:34:39 2016
 
 from boschStart2 import *
 
+#%%
 train_id = pd.read_csv('train_date_pure.csv', usecols=['Id']).Id.values
 test_id = pd.read_csv('test_date_pure.csv', usecols=['Id']).Id.values
 # the samples in training set 2
 np.random.seed(0)
 train_id_part = np.random.choice(train_id, len(train_id)/2, replace=False)
+
+#%% processing 
 df = create_bag_features(train_id_part, id_window_sizes=[3, 5, 7, 9],
                         time_window_sizes=[0.01, 0.05, 0.1, 0.5])
 train_id_diff = np.setdiff1d(train_id, train_id_part)
@@ -25,6 +28,7 @@ prior = 1.*np.sum(y_train)/len(y_train)
 del df
 gc.collect()
 
+#%%
 clf = xgb.XGBClassifier(max_depth=7, objective='binary:logistic', 
                         learning_rate=0.021, colsample_bytree=0.82,
                         min_child_weight=3, base_score=prior, 

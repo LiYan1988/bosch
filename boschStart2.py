@@ -310,7 +310,7 @@ class MCSClassifier(BaseEstimator, ClassifierMixin):
         
         return y_test_pred
     
-def create_bag_features(out_indexes, id_window_sizes=[3, 5, 7, 9],
+def create_date_meta_features(out_indexes, id_window_sizes=[3, 5, 7, 9],
                         time_window_sizes=[0.01, 0.05, 0.1, 0.5]):
     """Create leave out features, leave some train samples out to create these
     features. Out of Bag features are used to create meta features, in bag 
@@ -345,9 +345,15 @@ def create_bag_features(out_indexes, id_window_sizes=[3, 5, 7, 9],
         del binned
         gc.collect()
         
-    train_test.loc[train_test.Id.isin(in_index), 'Response'] = Response_true
+#    train_test.loc[train_test.Id.isin(in_index), 'Response'] = Response_true
+    x_train_work_date = train_test.loc[train_test.Id.isin(in_index)].copy()
+    x_train_work_date.drop('Response', axis=1, inplace=True)
+                                       
+    test_id = pd.read_csv('input/test_numeric.csv', usecols=['Id']).Id
+    x_test_date = train_test.loc[train_test.Id.isin(test_id)].copy()
+    x_test_date.drop('Response', axis=1, inplace=True)
         
-    return train_test
+    return x_train_work_date, x_test_date, train_test
     
 #class MetaBagClassifier(BaseEstimator, ClassifierMixin):
 #    def __init__(self, meta_estimators, estimators, n_runs, bag_size, 
@@ -363,7 +369,120 @@ def create_bag_features(out_indexes, id_window_sizes=[3, 5, 7, 9],
 #        
 #    def fit(x_train=None, y_train=None):
         
+def create_numeric_meta_features(train_meta_id, estimator_meta):
+    train_numeric = read_data('train_numeric_feature_set1.pkl')
+    train_id = np.array(train_numeric.Id.values)
+    train_work_id = np.setdiff1d(train_id, train_meta_id)
+    
+    x_train_meta = train_numeric[train_numeric.Id.isin(train_meta_id)].copy()
+    y_train_meta = x_train_meta['Response']
+    x_train_meta.drop('Response', axis=1, inplace=True)
+    x_train_meta.fillna(-999, inplace=True)
+    
+    x_train_work = train_numeric[train_numeric.Id.isin(train_work_id)].copy()
+    y_train_work = x_train_work['Response']
+    x_train_work.drop('Response', axis=1, inplace=True)
+    x_train_work.fillna(-999, inplace=True)
+    
+    del train_numeric
+    gc.collect()
+    
+    estimator_meta.fit(x_train_meta, y_train_meta)
+    
+    train_work_new_feature = estimator_meta.predict_proba(x_train_work)[:, 1]
+    del x_train_work
+    gc.collect()
+
+    x_test = read_data('test_numeric_feature_set1.pkl')
+    x_test.fillna(-999, inplace=True)
+    test_new_feature = estimator_meta.predict_proba(x_test)[:, 1]
+
+    return train_work_new_feature, test_new_feature, y_train_work
+    
+def create_train_test_sets(train_meta_id, meta_estimators, 
+                           id_window_sizes=[3, 5, 7, 9], 
+                            time_window_sizes=[0.01, 0.05, 0.1, 0.5]):
+    
+    # create numeric features
+    train_numeric = read_data('train_numeric_feature_set1.pkl')
+    train_id = np.array(train_numeric.Id.values)
+#    np.random.seed(0)
+#    train_meta_id = np.random.choice(train_id, len(train_id)/2, replace=False)
+    train_work_id = np.setdiff1d(train_id, train_meta_id)
+    del train_numeric
+    gc.collect()
+    
+    train_work_new_features = []
+    test_new_features = []
+    for estimator in meta_estimators:
+        train_work_new_feature, test_new_feature, y_train_work = \
+            create_numeric_meta_features(train_meta_id, estimator)
+        train_work_new_features.append(train_work_new_feature)
+        test_new_features.append(test_new_feature)
         
+    # create date features
+    x_train_work_date, x_test_date, _ = \
+        create_date_meta_features(train_meta_id, 
+                                   id_window_sizes=id_window_sizes, 
+                                   time_window_sizes=time_window_sizes)
+    
+    # merge new features with train 
+    train_numeric = read_data('train_numeric_feature_set1.pkl')
+    x_train_work = train_numeric[train_numeric.Id.isin(train_work_id)].copy()
+    y_train_work = x_train_work['Response']
+    x_train_work.drop('Response', axis=1, inplace=True)
+    x_train_work.fillna(-999, inplace=True)
+    del train_numeric
+    gc.collect()
+    
+    for i, f in enumerate(train_work_new_features):
+        x_train_work['numeric_feature_'+str(i)] = f
+    x_train_work = pd.merge(x_train_work, x_train_work_date, how='left',
+                            left_on='Id', right_on='Id')
+    
+    x_test = read_data('test_numeric_feature_set1.pkl')
+    for i, f in enumerate(test_new_features):
+        x_test['numeric_feature_'+str(i)] =f
+    x_test = pd.merge(x_test, x_test_date, how='left', left_on='Id', 
+                      right_on='Id')
+    
+    return x_train_work, y_train_work, x_test
+    
+def meta_predict(estimator, meta_estimators, id_window_sizes=[3, 5, 7, 9], 
+                 time_window_sizes=[0.01, 0.05, 0.1, 0.5], random_state=0):
+    train_numeric = read_data('train_numeric_feature_set1.pkl')
+    train_id = np.array(train_numeric.Id.values)
+    np.random.seed(random_state)
+    train_meta_id = np.random.choice(train_id, len(train_id)/2, replace=False)
+    train_work_id = np.setdiff1d(train_id, train_meta_id)
+    y_train_pred = -1.*np.ones((train_id.shape[0],))
+    
+    x_train_work1, y_train_work1, x_test1 = \
+        create_train_test_sets(train_meta_id, meta_estimators, 
+                               id_window_sizes=id_window_sizes, 
+                               time_window_sizes=time_window_sizes)
+    estimator.base_score = 1.*np.sum(y_train_work1)/len(y_train_work1)
+    estimator.fit(x_train_work1, y_train_work1.values)
+    tmp = estimator.predict_proba(x_train_work1)[:, 1]
+    y_train_pred[train_work_id] = tmp
+    y_test_pred = estimator.predict_proba(x_test1)[:, 1]
+    del x_train_work1, x_test1
+    gc.collect()
+    
+    x_train_work2, y_train_work2, x_test2 = \
+        create_train_test_sets(train_work_id, meta_estimators, 
+                               id_window_sizes=id_window_sizes, 
+                               time_window_sizes=time_window_sizes)
+    estimator.base_score = 1.*np.sum(y_train_work2)/len(y_train_work2)
+    estimator.fit(x_train_work2, y_train_work2.values)
+    tmp = estimator.predict_proba(x_train_work2)[:, 1]
+    y_train_pred[train_meta_id] = tmp
+    y_test_pred += estimator.predict_proba(x_test2)[:, 1]
+    y_test_pred /= 2.0
+    del x_train_work2, x_test2
+
+    return y_train_pred, y_test_pred
+    
 if __name__=='__main__':
     print('main')
     

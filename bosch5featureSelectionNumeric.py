@@ -52,6 +52,8 @@ nz_freq_big = nz_freq.loc[(nz_freq['count']>1000)&(nz_freq['nz_freq']>0.0055)].\
 cols = pd.merge(nz_freq_big, nz_freq_good, how='outer', 
                 on=list(nz_freq_big.columns))
 
+save_data(cols, 'numeric_feature_set1.pkl')
+
 #nz_min = [(i, feat_num_stat[i].columns[0], 
 #           feat_num_stat[i].loc[feat_num_stat[i].Frequency>0].Frequency.min(),
 #           int(feat_num_stat[i].loc[feat_num_stat[i].Frequency>0].Sum.sum()))
