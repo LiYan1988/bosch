@@ -224,28 +224,55 @@ from boschStart2 import *
 #del x_train_work1
 #y_test_pred1 = clf.predict_proba(x_test1)
 
-#%%
+#%% put all functions into one
 train_numeric = read_data('train_numeric_feature_set1.pkl')
+x_test_file = 'test_numeric_feature_set1.pkl'
 train_id = np.array(train_numeric.Id.values)
+
 np.random.seed(0)
 train_meta_id = np.random.choice(train_id, len(train_id)/2, replace=False)
 train_work_id = np.setdiff1d(train_id, train_meta_id)
 
-estimator1 = ensemble.RandomForestClassifier(n_estimators=8, 
-                                                 max_depth=1,
-                                                 random_state=0, 
-                                                 verbose=10, 
-                                                 n_jobs=-1)
-estimator2 = ensemble.RandomForestClassifier(n_estimators=8, 
-                                                 max_depth=1,
-                                                 random_state=1, 
-                                                 verbose=10, 
-                                                 n_jobs=-1)
+estimator1 = ensemble.RandomForestClassifier(n_estimators=10, 
+                                             max_depth=4,
+                                             random_state=0, 
+                                             verbose=1, 
+                                             n_jobs=-1)
+estimator2 = naive_bayes.GaussianNB(priors=[0.9942, 0.0058])
+#estimator3 = ensemble
+
 meta_estimators = [estimator1, estimator2]
-clf = xgb.XGBClassifier(max_depth=3, objective='binary:logistic', 
+clf = xgb.XGBClassifier(max_depth=7, objective='binary:logistic', 
                         learning_rate=0.021, colsample_bytree=0.82,
-                        min_child_weight=3, n_estimators=1)
+                        min_child_weight=3, n_estimators=69)
+
+n_runs = 20
+y_train_pred_list = []
+y_test_pred_list = []
+for i in range(n_runs):    
+    ids, y_train_pred, y_test_pred = \
+        meta_predict(clf, meta_estimators, train_numeric, x_test_file,
+                     id_window_sizes=[5], 
+                     time_window_sizes=[0.5], random_state=0)
     
-y_train_pred, y_test_pred = \
-    meta_predict(clf, meta_estimators, id_window_sizes=[5], 
-                 time_window_sizes=[0.5], random_state=0)
+    y_train_pred_oob = pd.read_csv('input/train_numeric.csv', 
+                               usecols=['Id', 'Response'])
+    y_train = np.array(y_train_pred_oob.Response.values)
+    y_train_pred_oob.loc[y_train_pred_oob.Id.isin(ids[0]), 'Response'] = y_train_pred[0]
+    y_train_pred_oob.loc[y_train_pred_oob.Id.isin(ids[1]), 'Response'] = y_train_pred[1]
+    y_train_pred_oob = np.array(y_train_pred_oob.Response.values)
+    y_train_pred_list.append(y_train_pred_oob)
+    y_test_pred_list.append(y_test_pred)
+
+y_train_pred = y_train_pred_list[0]
+y_test_pred = y_test_pred_list[0]
+for i in range(1, n_runs):
+    y_train_pred += y_train_pred_list[i]
+    y_test_pred += y_test_pred_list[i]
+y_train_pred /= 1.*n_runs
+y_test_pred /= 1.*n_runs
+
+best_proba, best_mcc, _ = eval_mcc(y_train, y_train_pred_oob, True)
+y_test_pred = (y_test_pred>=best_mcc).astype(np.uint8)
+save_submission(y_test_pred, 'numericFeatureSubmission.csv', None)
+

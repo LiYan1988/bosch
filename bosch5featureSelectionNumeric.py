@@ -43,10 +43,10 @@ nz_freq = [(i, feat_num_stat[i].columns[0],
 nz_freq = pd.DataFrame(nz_freq)
 nz_freq.columns = ['index', 'feature', 'nz_freq', 'count']
 nz_freq['count'].astype(int)
-nz_freq_good = nz_freq.loc[(nz_freq['count']>50)&(nz_freq['nz_freq']>0.02)].\
+nz_freq_good = nz_freq.loc[(nz_freq['count']>100)&(nz_freq['nz_freq']>0.02)].\
                            sort_values(by=['nz_freq', 'count'], 
                                        ascending=False)
-nz_freq_big = nz_freq.loc[(nz_freq['count']>1000)&(nz_freq['nz_freq']>0.0055)].\
+nz_freq_big = nz_freq.loc[(nz_freq['count']>1500)&(nz_freq['nz_freq']>0.0055)].\
                            sort_values(by=['count', 'nz_freq'], 
                                        ascending=False)
 cols = pd.merge(nz_freq_big, nz_freq_good, how='outer', 
