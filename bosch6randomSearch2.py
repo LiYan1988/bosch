@@ -11,7 +11,7 @@ from boschStart2 import *
 mcc_score = metrics.make_scorer(mcc_sklearn, greater_is_better=True)
 
 # test score function
-#ground_truth = np.array([[1],[0],[1],[1]])
+#ground_truth = np.array([[0],[1],[1],[0]])
 #predictions  = np.array([0, 1, 1, 0])
 #clf = dummy.DummyClassifier(strategy='most_frequent', random_state=0)
 #clf = clf.fit(ground_truth, predictions)
@@ -39,12 +39,12 @@ np.random.seed(0)
 
 params = {}
 params['subsample'] = [0.6, 0.8]
-params['learning_rate'] = [0.005, 0.01]
-params['n_estimators'] = [50, 70, 90, 110]
+params['learning_rate'] = [0.005, 0.01, 0.002]
+params['n_estimators'] = [50]
 params['max_depth'] = [13, 15, 17, 19, 21]
-params['colsample_bytree'] = [0.3, 0.4]
+params['colsample_bytree'] = [0.2, 0.3, 0.4]
 params['reg_alpha'] = [2, 3]
 
-gridcv = model_selection.RandomizedSearchCV(clf, params, scoring=mcc_score, 
-    n_iter=64, verbose=10, cv=5)
+gridcv = model_selection.RandomizedSearchCV(clf, params, scoring='roc_auc', 
+    n_iter=20, verbose=10, cv=5)
 gridcv.fit(x_train, y_train)
