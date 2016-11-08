@@ -25,7 +25,7 @@ x_train0 = x_train.iloc[np.arange(n_train)]
 y_train0 = y_train[np.arange(n_train)]
 x_train1 = x_train.iloc[np.arange(n_train, n_sample)]
 y_train1 = y_train[np.arange(n_train, n_sample)]
-#                 
+#
 prior = 1.*y_train0.sum()/len(y_train0)
 clf.base_score = prior
 #clf.fit(x_train0, y_train0, eval_set=[(x_train0, y_train0), (x_train1, y_train1)], 
