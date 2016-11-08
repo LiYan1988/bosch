@@ -127,7 +127,7 @@ from boschStart2 import *
 #y_train0_pred = clf.predict_proba(x_train0)[:, 1]
 #best_proba, best_mcc, _ = eval_mcc(y_train0, y_train0_pred, True)
 
-#%%
+#%% breakthrough: the selected features make public LB 0.34149
 x_train = read_data('train_numeric_feature200_set1.pkl')
 x_train.fillna(-999)
 y_train = np.array(x_train.Response.values)
@@ -151,7 +151,7 @@ del x_train
 gc.collect()
 
 x_test = read_data('test_numeric_feature200_set1.pkl')
-y_test_pred = clf.predict_proba(x_test)
+y_test_pred = clf.predict_proba(x_test)[:, 1]
 y_test_pred = (y_test_pred>=best_proba).astype(int)
 test_id = list(x_test.Id.values.ravel())
 save_submission(y_test_pred, 'numericFeatureSubmission1.csv', test_id)

@@ -22,7 +22,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn import (preprocessing, manifold, decomposition, ensemble,
                      feature_extraction, model_selection, cross_validation,
                      calibration, linear_model, metrics, neighbors, 
-                     naive_bayes)
+                     naive_bayes, dummy)
 #from numba import jit
 
 def twoplot(df, col, y_lims=None, xaxis=None):
@@ -57,6 +57,10 @@ def mcc_eval(y_prob, dtrain):
     y_true = dtrain.get_label()
     best_mcc = -eval_mcc(y_true, y_prob)
     return 'MCC', best_mcc
+    
+def mcc_sklearn(y_true, y_pred):
+    best_mcc = eval_mcc(y_true, y_pred)
+    return best_mcc
 
 #@jit
 def eval_mcc(y_true, y_prob, show=False):
