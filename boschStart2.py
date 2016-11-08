@@ -14,6 +14,7 @@ import os
 from scipy import sparse
 from sys import getsizeof
 import copy
+import seaborn as sns
 
 from sklearn.metrics import matthews_corrcoef
 import xgboost as xgb
@@ -24,6 +25,25 @@ from sklearn import (preprocessing, manifold, decomposition, ensemble,
                      naive_bayes)
 #from numba import jit
 
+def twoplot(df, col, y_lims=None, xaxis=None):
+    ''' scatter plot a feature split into response values as two subgraphs '''
+    if col not in df.columns.values:
+        print('ERROR: %s not a column' % col)
+    ndf = pd.DataFrame(index = df.index)
+    ndf[col] = df[col]
+    ndf[xaxis] = df[xaxis] if xaxis else df.index
+    ndf['Response'] = df['Response']
+    
+    g = sns.FacetGrid(ndf, col="Response", hue="Response")
+    g.map(plt.scatter, xaxis, col, alpha=.7, s=1)
+    g.add_legend();
+    axes = g.axes
+    if y_lims is not None:
+        axes[0, 0].set_ylim(y_lims[0],y_lims[1])
+#        axes[0, 1].set_xlim(axes_lims['x'][0],axes_lims['x'][0])
+    
+    del ndf
+
 #@jit
 def mcc(tp, tn, fp, fn):
     sup = tp * tn - fp * fn
@@ -32,6 +52,11 @@ def mcc(tp, tn, fp, fn):
         return 0
     else:
         return sup / np.sqrt(inf)
+        
+def mcc_eval(y_prob, dtrain):
+    y_true = dtrain.get_label()
+    best_mcc = -eval_mcc(y_true, y_prob)
+    return 'MCC', best_mcc
 
 #@jit
 def eval_mcc(y_true, y_prob, show=False):

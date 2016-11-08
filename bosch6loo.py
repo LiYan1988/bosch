@@ -42,22 +42,117 @@ from boschStart2 import *
 #save_data(train_numeric, 'train_numeric_feature200_set.pkl')
 #save_data(test_numeric, 'test_numeric_feature200_set.pkl')
 
-#%% 
-x_train = read_data('train_numeric_feature200_set.pkl')
+#%% Try xgboost, it's okay to put half of the data into memory
+#x_train = read_data('train_numeric_feature200_set.pkl')
+#x_train.fillna(-999)
+#y_train = np.array(x_train.Response.values)
+#x_train.drop(['Response'], axis=1, inplace=True)
+#x_test = read_data('test_numeric_feature200_set.pkl')
+#
+#clf = xgb.XGBClassifier(max_depth=7, objective='binary:logistic', 
+#                        learning_rate=0.005, colsample_bytree=0.4,
+#                        min_child_weight=1, n_estimators=69, subsample=1,
+#                        reg_alpha=2, reg_lambda=1)
+##
+#x_train0 = x_train.iloc[np.arange(0, x_train.shape[0], 2)]
+#y_train0 = y_train[np.arange(0, x_train.shape[0], 2)]
+#x_train1 = x_train.iloc[np.arange(1, x_train.shape[0], 2)]
+#y_train1 = y_train[np.arange(1, x_train.shape[0], 2)]
+#del x_train, y_train
+#gc.collect()
+#
+#prior = 1.*y_train0.sum()/len(y_train0)
+#clf.base_score = prior
+#clf.fit(x_train0, y_train0, eval_set=[(x_train1, y_train1)], eval_metric='auc',
+#                                      early_stopping_rounds=10, verbose=True)
+#y_train1_pred = clf.predict_proba(x_train1)
+#best_proba, best_mcc, _ = eval_mcc(y_train1, y_train1_pred, True)
+
+#%% merge with date
+#x_train = read_data('train_numeric_feature200_set.pkl')
+#x_test = read_data('test_numeric_feature200_set.pkl')
+#train_test_date = pd.read_csv('train_test_date2.csv')
+##train_test_date.drop(['Response'], axis=1, inplace=True)
+#x_train = pd.merge(x_train, train_test_date, how='left', left_on='Id', right_on='Id')
+#x_test = pd.merge(x_test, train_test_date, how='left', left_on='Id', right_on='Id')
+#save_data(x_train, 'train_numeric_feature200_set1.pkl')
+#save_data(x_test, 'test_numeric_feature200_set1.pkl')
+#
+#%% try to train xgboost with date features
+
+#x_train = read_data('train_numeric_feature200_set1.pkl')
+#x_train.fillna(-999)
+#y_train = np.array(x_train.Response.values)
+#x_train.drop(['Response'], axis=1, inplace=True)
+##x_test = read_data('test_numeric_feature200_set1.pkl')
+#
+#clf = xgb.XGBClassifier(max_depth=15, objective='binary:logistic', 
+#                        learning_rate=0.01, colsample_bytree=0.4,
+#                        min_child_weight=1, n_estimators=690, subsample=0.8,
+#                        reg_alpha=2, reg_lambda=1)
+##
+#x_train0 = x_train.iloc[np.arange(0, x_train.shape[0], 2)]
+#y_train0 = y_train[np.arange(0, x_train.shape[0], 2)]
+#x_train1 = x_train.iloc[np.arange(1, x_train.shape[0], 2)]
+#y_train1 = y_train[np.arange(1, x_train.shape[0], 2)]
+#del x_train, y_train
+#gc.collect()
+#
+#prior = 1.*y_train0.sum()/len(y_train0)
+#clf.base_score = prior
+#clf.fit(x_train0, y_train0, eval_set=[(x_train0, y_train0), 
+#                                      (x_train1, y_train1)], 
+#                                      eval_metric=mcc_eval,
+#                                      early_stopping_rounds=10, 
+#                                      verbose=True)
+#y_train1_pred = clf.predict_proba(x_train1)[:, 1]
+#best_proba, best_mcc, _ = eval_mcc(y_train1, y_train1_pred, True)
+
+# train xgboost on the other subset of train
+#del clf
+#gc.collect()
+#
+#clf = xgb.XGBClassifier(max_depth=15, objective='binary:logistic', 
+#                        learning_rate=0.01, colsample_bytree=0.4,
+#                        min_child_weight=1, n_estimators=690, subsample=0.8,
+#                        reg_alpha=2, reg_lambda=1)
+#
+#prior = 1.*y_train1.sum()/len(y_train1)
+#clf.base_score = prior
+#clf.fit(x_train1, y_train1, eval_set=[(x_train1, y_train1), 
+#                                      (x_train0, y_train0)], 
+#                                      eval_metric=mcc_eval,
+#                                      early_stopping_rounds=10, 
+#                                      verbose=True)
+#y_train0_pred = clf.predict_proba(x_train0)[:, 1]
+#best_proba, best_mcc, _ = eval_mcc(y_train0, y_train0_pred, True)
+
+#%%
+x_train = read_data('train_numeric_feature200_set1.pkl')
 x_train.fillna(-999)
 y_train = np.array(x_train.Response.values)
 x_train.drop(['Response'], axis=1, inplace=True)
-x_test = read_data('test_numeric_feature200_set.pkl')
 
-clf = xgb.XGBClassifier(max_depth=6, objective='binary:logistic', 
-                        learning_rate=0.005, colsample_bytree=0.1,
-                        min_child_weight=1, n_estimators=69, subsample=1,
-                        reg_alpha=3, reg_lambda=0)
+clf = xgb.XGBClassifier(max_depth=15, objective='binary:logistic', 
+                        learning_rate=0.01, colsample_bytree=0.4,
+                        min_child_weight=1, n_estimators=40, subsample=0.8,
+                        reg_alpha=2, reg_lambda=1)
+
 prior = 1.*y_train.sum()/len(y_train)
+clf.base_score = prior
+clf.fit(x_train, y_train, eval_set=[(x_train, y_train)], 
+                                      eval_metric=mcc_eval,
+                                      early_stopping_rounds=10, 
+                                      verbose=True)
+y_train_pred = clf.predict_proba(x_train)[:, 1]
+best_proba, best_mcc, _ = eval_mcc(y_train, y_train_pred, True)
 
-x_train0 = x_train.iloc[::2]
-y_train0 = y_train.iloc[::2]
-x_train1 = x_train.iloc[1::2]
-y_train1 = y_train.iloc[1::2]
-clf.fit(x_train0, y_train0, eval_set=[(x_train1, y_train1)], eval_metric='auc',
-                                      early_stopping_rounds=10, verbose=True)
+del x_train
+gc.collect()
+
+x_test = read_data('test_numeric_feature200_set1.pkl')
+y_test_pred = clf.predict_proba(x_test)
+y_test_pred = (y_test_pred>=best_proba).astype(int)
+test_id = list(x_test.Id.values.ravel())
+save_submission(y_test_pred, 'numericFeatureSubmission1.csv', test_id)
+
