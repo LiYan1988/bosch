@@ -566,13 +566,23 @@ def cv_bag(clf, x_train, y_train, x_test, n_run, n_cv, random_state,
                         verbose=verbose, 
                         early_stopping_rounds=10)
                 trees.append(clf.best_ntree_limit)
+                ntree_limit = clf.best_ntree_limit
             else:
                 clf.fit(x_train_inbag, y_train_inbag)
                 
             print('Predicting on out bag data...')
-            y_train_pred[outbag_id] = clf.predict_proba(x_train_outbag)[:, 1]
+            if str(clf).split('(')[0] == 'XGBClassifier':
+                y_train_pred[outbag_id] = clf.predict_proba(x_train_outbag, 
+                    ntree_limit=ntree_limit)[:, 1]
+            else:
+                y_train_pred[outbag_id] = \
+                    clf.predict_proba(x_train_outbag)[:, 1]
             print('Predicting on test data...')
-            y_test_pred += clf.predict_proba(x_test)[:, 1]
+            if str(clf).split('(')[0] == 'XGBClassifier':
+                y_test_pred += clf.predict_proba(x_test, 
+                    ntree_limit=ntree_limit)[:, 1]
+            else:
+                y_test_pred += clf.predict_proba(x_test)[:, 1]
 
             del x_train_outbag, x_train_inbag, y_train_inbag
             gc.collect()
