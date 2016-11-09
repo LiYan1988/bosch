@@ -525,6 +525,67 @@ def meta_predict(estimator, meta_estimators, train_numeric, x_test_file,
 
     return ids, y_train_pred, y_test_pred
     
+def cv_bag(clf, x_train, y_train, x_test, n_run, n_cv, random_state, 
+           verbose=False):
+    """x_train and x_test are sparse dataframe, y_train is np.array"""
+    
+    y_test_pred_list = []
+    y_train_pred_list = []
+    best_ntree = []
+    np.random.seed(random_state)
+    
+    for i in range(n_run):
+        trees = []
+        print('CV repetition {}'.format(i))
+        y_test_pred = np.zeros((x_test.shape[0],))
+        y_train_pred = y_train.copy()
+        y_train_pred = y_train_pred.astype(np.float16)
+        y_train_pred.fill(0.)
+        
+        seed = np.random.randint(100000)
+        kf = model_selection.StratifiedKFold(n_splits=n_cv, shuffle=True, 
+                                         random_state=seed)
+        k = 0
+        for inbag_id, outbag_id in kf.split(x_train, y_train):
+            print('CV round {}'.format(k))
+            x_train_outbag = x_train.iloc[outbag_id].copy()
+            y_train_outbag = y_train[outbag_id].copy()
+#            y_train_outbag = np.array(y_train_outbag.Response.values)
+        
+            x_train_inbag = x_train.iloc[inbag_id].copy()
+            y_train_inbag = y_train[inbag_id].copy()
+#            y_train_inbag = np.array(y_train_inbag.Response.values)
+            
+            if hasattr(clf, 'base_score'):
+                clf.base_score = 1.*y_train_inbag.sum()/len(y_train_inbag)
+            print('Training on in bag data...')
+            if str(clf).split('(')[0] == 'XGBClassifier':
+                clf.fit(x_train_inbag, y_train_inbag, 
+                        eval_set=[(x_train_outbag, y_train_outbag)], 
+                        eval_metric=mcc_eval,
+                        verbose=verbose, 
+                        early_stopping_rounds=10)
+                trees.append(clf.best_ntree_limit)
+            else:
+                clf.fit(x_train_inbag, y_train_inbag)
+                
+            print('Predicting on out bag data...')
+            y_train_pred[outbag_id] = clf.predict_proba(x_train_outbag)[:, 1]
+            print('Predicting on test data...')
+            y_test_pred += clf.predict_proba(x_test)[:, 1]
+
+            del x_train_outbag, x_train_inbag, y_train_inbag
+            gc.collect()
+
+            k += 1
+        
+        best_ntree.append(trees)
+        y_test_pred /= n_cv
+        y_test_pred_list.append(y_test_pred)
+        y_train_pred_list.append(y_train_pred)
+        
+    return y_train_pred_list, y_test_pred_list, best_ntree
+    
 if __name__=='__main__':
     print('main')
     
