@@ -29,7 +29,7 @@ clf = xgb.XGBClassifier(max_depth=11, objective='binary:logistic',
 #clf = ensemble.RandomForestClassifier(n_estimators=10, max_depth=7, n_jobs=-1,
 #                                      verbose=10)
 
-drivedir
+
 n_run = 16
 n_cv = 5
 random_state = 2986
