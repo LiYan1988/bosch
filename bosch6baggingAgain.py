@@ -33,17 +33,17 @@ y_train_pred.fill(0.)
 n_cv = 5
 kf = model_selection.StratifiedKFold(n_splits=n_cv, shuffle=True, random_state=2)
 
-meta_estimator_rf = ensemble.RandomForestClassifier(n_estimators=10, max_depth=7, n_jobs=-1)
-meta_estimator_ext = ensemble.ExtraTreesClassifier(n_estimators=10, max_depth=7, n_jobs=-1)
+meta_estimator_rf = ensemble.RandomForestClassifier(n_estimators=100, max_depth=7, n_jobs=-1)
+meta_estimator_ext = ensemble.ExtraTreesClassifier(n_estimators=100, max_depth=7, n_jobs=-1)
 #meta_estimator_gb = naive_bayes.GaussianNB(priors=[.9942, .0058])
 #meta_estimator_knn = neighbors.KNeighborsClassifier(n_neighbors=16)
-meta_estimators = {'rf1':meta_estimator_rf, 'ext1':meta_estimator_ext, 
-                   'gb1':meta_estimator_gb}
-#meta_estimators = {}
+#meta_estimators = {'rf1':meta_estimator_rf, 'ext1':meta_estimator_ext, 
+#                   'gb1':meta_estimator_gb}
+meta_estimators = {'rf1':meta_estimator_rf, 'ext1':meta_estimator_ext}
 
-clf = xgb.XGBClassifier(max_depth=15, objective='binary:logistic', 
+clf = xgb.XGBClassifier(max_depth=11, objective='binary:logistic', 
                         learning_rate=0.01, colsample_bytree=0.4,
-                        min_child_weight=1, n_estimators=40, subsample=0.8,
+                        min_child_weight=1, n_estimators=90, subsample=0.6,
                         reg_alpha=2, reg_lambda=1)
 
 for bag_id, meta_id in kf.split(x_train, y_train):
