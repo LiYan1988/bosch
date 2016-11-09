@@ -40,7 +40,7 @@ np.random.seed(0)
 params = {}
 params['subsample'] = [0.6, 0.8]
 params['learning_rate'] = [0.005, 0.01, 0.002]
-params['n_estimators'] = [50]
+params['n_estimators'] = [70]
 params['max_depth'] = [13, 15, 17, 19, 21]
 params['colsample_bytree'] = [0.2, 0.3, 0.4]
 params['reg_alpha'] = [2, 3]
