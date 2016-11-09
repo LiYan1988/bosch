@@ -3,6 +3,8 @@
 Created on Tue Nov 08 19:43:28 2016
 
 @author: lyaa
+subsample=0.6, learning_rate=0.01, max_depth=13, colsample_bytree=0.4, 
+reg_alpha=2, n_estimator=90 or more will give auc=0.878
 """
 
 
@@ -40,7 +42,7 @@ np.random.seed(0)
 params = {}
 params['subsample'] = [0.6, 0.8]
 params['learning_rate'] = [0.005, 0.01, 0.002]
-params['n_estimators'] = [50]
+params['n_estimators'] = [50, 70, 90, 110]
 params['max_depth'] = [13, 15, 17, 19, 21]
 params['colsample_bytree'] = [0.2, 0.3, 0.4]
 params['reg_alpha'] = [2, 3]
