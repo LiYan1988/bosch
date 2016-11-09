@@ -35,7 +35,7 @@ kf = model_selection.StratifiedKFold(n_splits=n_cv, shuffle=True, random_state=2
 
 meta_estimator_rf = ensemble.RandomForestClassifier(n_estimators=10, max_depth=7, n_jobs=-1)
 meta_estimator_ext = ensemble.ExtraTreesClassifier(n_estimators=10, max_depth=7, n_jobs=-1)
-meta_estimator_gb = naive_bayes.GaussianNB(priors=[.9942, .0058])
+#meta_estimator_gb = naive_bayes.GaussianNB(priors=[.9942, .0058])
 #meta_estimator_knn = neighbors.KNeighborsClassifier(n_neighbors=16)
 meta_estimators = {'rf1':meta_estimator_rf, 'ext1':meta_estimator_ext, 
                    'gb1':meta_estimator_gb}
@@ -108,4 +108,4 @@ y_test_hat = (y_test_pred>=best_proba).astype(int)
 test_id = list(x_test.Id.values.ravel())
 #del x_train, x_test
 #gc.collect()
-save_submission(y_test_hat, 'ensembleCVsubmission2.csv', test_id)
+save_submission(y_test_hat, 'ensembleCVsubmission3.csv', test_id)
