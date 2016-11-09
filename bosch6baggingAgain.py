@@ -39,6 +39,7 @@ meta_estimator_gb = naive_bayes.GaussianNB(priors=[.9942, .0058])
 #meta_estimator_knn = neighbors.KNeighborsClassifier(n_neighbors=16)
 meta_estimators = {'rf1':meta_estimator_rf, 'ext1':meta_estimator_ext, 
                    'gb1':meta_estimator_gb}
+#meta_estimators = {}
 
 clf = xgb.XGBClassifier(max_depth=15, objective='binary:logistic', 
                         learning_rate=0.01, colsample_bytree=0.4,
