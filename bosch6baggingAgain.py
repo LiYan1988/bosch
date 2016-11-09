@@ -31,10 +31,10 @@ y_train_pred = y_train_pred.astype(np.float16)
 y_train_pred.fill(0.)
 
 n_cv = 5
-kf = model_selection.StratifiedKFold(n_splits=n_cv, shuffle=True, random_state=0)
+kf = model_selection.StratifiedKFold(n_splits=n_cv, shuffle=True, random_state=2)
 
-meta_estimator_rf = ensemble.RandomForestClassifier(n_estimators=20, max_depth=5, n_jobs=-1)
-meta_estimator_ext = ensemble.ExtraTreesClassifier(n_estimators=20, max_depth=5, n_jobs=-1)
+meta_estimator_rf = ensemble.RandomForestClassifier(n_estimators=10, max_depth=7, n_jobs=-1)
+meta_estimator_ext = ensemble.ExtraTreesClassifier(n_estimators=10, max_depth=7, n_jobs=-1)
 meta_estimator_gb = naive_bayes.GaussianNB(priors=[.9942, .0058])
 #meta_estimator_knn = neighbors.KNeighborsClassifier(n_neighbors=16)
 meta_estimators = {'rf1':meta_estimator_rf, 'ext1':meta_estimator_ext, 
@@ -58,10 +58,14 @@ for bag_id, meta_id in kf.split(x_train, y_train):
     test_new_features = []
     names = []
     for name, estimator in meta_estimators.iteritems():
+        print('Estimator {}'.format(name))
         names.append(name)
+        print('Fitting...')
         estimator.fit(x_train_meta, y_train_meta)
+        print('Predicting on bag set')
         u = estimator.predict_proba(x_train_bag)[:, 1]
         train_new_features.append(u)
+        print('Predicting on test set')
         u = estimator.predict_proba(x_test)[:, 1]
         test_new_features.append(u)
         del estimator
@@ -71,7 +75,7 @@ for bag_id, meta_id in kf.split(x_train, y_train):
         x_train_bag[name] = train_new_features[i]
         x_test[name] = test_new_features[i]
         
-    del x_train_meta, y_train_meta
+    del x_train_meta, y_train_meta, names, train_new_features, test_new_features
     gc.collect()
         
 #    u = meta_estimator_rf.predict_proba(x_train_bag)[:, 1]
@@ -79,14 +83,17 @@ for bag_id, meta_id in kf.split(x_train, y_train):
 #    u = meta_estimator_rf.predict_proba(x_test)[:, 1]
 #    x_test['rf1'] = u
     
+    print('Training outer classifier...')
     prior = 1.*y_train_bag.sum()/len(y_train_bag)
     clf.base_score = prior
     clf.fit(x_train_bag, y_train_bag)
+    print('Predicting on bag set')
     y_train_pred[bag_id] += clf.predict_proba(x_train_bag)[:, 1]
 
     del x_train_bag
     gc.collect()
     
+    print('Predicting on test set')
     y_test_pred += clf.predict_proba(x_test)[:, 1]
     x_test.drop(meta_estimators.keys(), axis=1, inplace=True)
     
@@ -100,4 +107,4 @@ y_test_hat = (y_test_pred>=best_proba).astype(int)
 test_id = list(x_test.Id.values.ravel())
 #del x_train, x_test
 #gc.collect()
-save_submission(y_test_hat, 'ensembleCVsubmission.csv', test_id)
+save_submission(y_test_hat, 'ensembleCVsubmission2.csv', test_id)
