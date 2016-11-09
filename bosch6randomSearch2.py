@@ -3,6 +3,8 @@
 Created on Tue Nov 08 19:43:28 2016
 
 @author: lyaa
+subsample=0.6, learning_rate=0.01, max_depth=13, colsample_bytree=0.4, 
+reg_alpha=2, n_estimator=90 or more will give auc=0.878
 """
 
 
