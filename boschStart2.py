@@ -683,11 +683,11 @@ def extremeBayesCV(clf, n_cv, random_state):
     x_test = read_data('test_numeric_feature200_set1.pkl')
     x_test.fillna(-999, inplace=True)
     
-    x_train = x_train.iloc[np.arange(100000)]
-    y_train = y_train[np.arange(100000)]
-    x_test = x_test.iloc[np.arange(100000, 200000)]
-    x_train = x_train.iloc[:, range(20)]
-    x_test = x_test.iloc[:, range(20)]
+#    x_train = x_train.iloc[np.arange(100000)]
+#    y_train = y_train[np.arange(100000)]
+#    x_test = x_test.iloc[np.arange(100000, 200000)]
+#    x_train = x_train.iloc[:, range(20)]
+#    x_test = x_test.iloc[:, range(20)]
     
     np.random.seed(random_state)
     
