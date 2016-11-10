@@ -674,6 +674,76 @@ def bagging2(meta_estimators, clf, n_cv, random_state):
     
     return y_train_pred, y_test_pred, y_train, test_id
     
+def extremeBayesCV(clf, n_cv, random_state):
+    x_train = read_data('train_numeric_feature200_set1.pkl')
+    x_train.fillna(-999, inplace=True)
+    y_train = np.array(x_train.Response.values)
+    response = x_train[['Id', 'Response']].copy()
+    x_train.drop(['Response'], axis=1, inplace=True)
+    x_test = read_data('test_numeric_feature200_set1.pkl')
+    x_test.fillna(-999, inplace=True)
+    
+    x_train = x_train.iloc[np.arange(100000)]
+    y_train = y_train[np.arange(100000)]
+    x_test = x_test.iloc[np.arange(100000, 200000)]
+    x_train = x_train.iloc[:, range(20)]
+    x_test = x_test.iloc[:, range(20)]
+    
+    np.random.seed(random_state)
+    
+    y_test_pred = np.zeros((x_test.shape[0],))
+    y_train_pred = y_train.copy()
+    y_train_pred = y_train_pred.astype(np.float16)
+    y_train_pred.fill(0.)
+    
+    kf = model_selection.StratifiedKFold(n_splits=n_cv, shuffle=True, 
+                                         random_state=np.random.randint(10000))
+    
+    for bag_id, meta_id in kf.split(x_train, y_train):
+        x_train_meta = x_train.iloc[meta_id].copy()
+        y_train_meta = response.iloc[meta_id].copy()
+        y_train_meta = np.array(y_train_meta.Response.values)
+        x_train_meta['Response'] = y_train_meta
+        
+        x_train_bag = x_train.iloc[bag_id].copy()
+        y_train_bag = response.iloc[bag_id].copy()
+        y_train_bag = np.array(y_train_bag.Response.values)
+        
+        x_test_copy = x_test.copy()
+        
+        cols = list(x_train_meta.columns)
+        cols.remove('Id')
+        cols.remove('Response')
+        
+        for i, c in enumerate(cols):
+            print 'column {}, {}'.format(i, c)
+            b = x_train_meta.groupby(c)['Response'].mean().reset_index()
+            b.columns = [c, c+'_b']
+            x_train_bag = pd.merge(x_train_bag, b, how='left', left_on=c, right_on=c)
+            x_train_bag.drop(c, axis=1, inplace=True)
+            x_test_copy = pd.merge(x_test_copy, b, how='left', left_on=c, right_on=c)
+            x_test_copy.drop(c, axis=1, inplace=True)
+        
+        print('Training outer classifier...')
+        prior = 1.*y_train_bag.sum()/len(y_train_bag)
+        clf.base_score = prior
+        clf.fit(x_train_bag, y_train_bag)
+        print('Predicting on bag set')
+        y_train_pred[bag_id] += clf.predict_proba(x_train_bag)[:, 1]
+        del x_train_bag
+        gc.collect()
+        
+        print('Predicting on test set')
+        y_test_pred += clf.predict_proba(x_test_copy)[:, 1]
+        del x_test_copy
+        gc.collect()
+        
+    test_id = list(x_test.Id.values.ravel())
+    y_train_pred /= 1.*(n_cv-1)
+    y_test_pred /= 1.*n_cv
+    
+    return y_train_pred, y_test_pred, y_train, test_id
+    
 if __name__=='__main__':
     print('main')
     
