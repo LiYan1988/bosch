@@ -24,24 +24,24 @@ a = pd.read_csv('input/train_categorical.csv', usecols=cat_nz, nrows=100)
 a.replace(ele_str, ele_num, inplace=True)
 
 #%% xgboost calculate feature importance
-clf = xgb.XGBClassifier(max_depth=5, objective='binary:logistic', 
-                        learning_rate=0.005, colsample_bytree=0.2,
-                        min_child_weight=1.5, n_estimators=15, subsample=1,
+clf = xgb.XGBClassifier(max_depth=9, objective='binary:logistic', 
+                        learning_rate=0.01, colsample_bytree=0.5,
+                        min_child_weight=1, n_estimators=15, subsample=0.6,
                         reg_alpha=2, reg_lambda=1)
 
-CHUNKSIZE = 10000
+CHUNKSIZE = 20000
 feature_importance = []
 for x, y in zip(pd.read_csv('input/train_categorical.csv', chunksize=CHUNKSIZE, 
                             usecols=cat_nz, dtype=np.str), 
                 pd.read_csv('train_id_response.csv', chunksize=CHUNKSIZE, 
                             usecols=['Response'], dtype=np.uint8)):
-    x.fillna(-999, inplace=True)
+    x.fillna(-9999999999, inplace=True)
     x.replace(ele_str, ele_num, inplace=True)
     y = np.array(y.values)
     y = y.ravel()
     prior = 1.*y.sum()/len(y)
     clf.base_score = prior
-    clf.fit(x, y)
+    clf.fit(x, y, eval_set=[(x, y)], eval_metric='auc', verbose=True)
     feature_importance.append(clf.feature_importances_)
     
 #%%
