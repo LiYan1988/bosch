@@ -22,7 +22,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn import (preprocessing, manifold, decomposition, ensemble,
                      feature_extraction, model_selection, cross_validation,
                      calibration, linear_model, metrics, neighbors, 
-                     naive_bayes, dummy)
+                     naive_bayes, dummy, tree)
 #from numba import jit
 
 def twoplot(df, col, y_lims=None, xaxis=None):
@@ -595,6 +595,84 @@ def cv_bag(clf, x_train, y_train, x_test, n_run, n_cv, random_state,
         y_train_pred_list.append(y_train_pred)
         
     return y_train_pred_list, y_test_pred_list, best_ntree
+    
+def bagging2(meta_estimators, clf, n_cv, random_state):
+    x_train = read_data('train_numeric_feature200_set1.pkl')
+    x_train.fillna(-999, inplace=True)
+    y_train = np.array(x_train.Response.values)
+    response = x_train[['Id', 'Response']].copy()
+    x_train.drop(['Response'], axis=1, inplace=True)
+    x_test = read_data('test_numeric_feature200_set1.pkl')
+    x_test.fillna(-999, inplace=True)
+    
+#    x_train = x_train.iloc[np.arange(10000)]
+#    y_train = y_train[np.arange(10000)]
+#    x_test = x_test.iloc[np.arange(10000, 20000)]
+    
+    # split data into meta and bag sets
+    np.random.seed(random_state)    
+    y_test_pred = np.zeros((x_test.shape[0],))
+    y_train_pred = y_train.copy()
+    y_train_pred = y_train_pred.astype(np.float16)
+    y_train_pred.fill(0.)
+    
+    kf = model_selection.StratifiedKFold(n_splits=n_cv, shuffle=True, 
+                                         random_state=np.random.randint(10000))
+
+    for bag_id, meta_id in kf.split(x_train, y_train):
+        x_train_meta = x_train.iloc[meta_id].copy()
+        y_train_meta = response.iloc[meta_id].copy()
+        y_train_meta = np.array(y_train_meta.Response.values)
+        
+        x_train_bag = x_train.iloc[bag_id].copy()
+        y_train_bag = response.iloc[bag_id].copy()
+        y_train_bag = np.array(y_train_bag.Response.values)
+        
+        train_new_features = []
+        test_new_features = []
+        names = []
+        for name, estimator in meta_estimators.iteritems():
+            print('Estimator {}'.format(name))
+            names.append(name)
+            print('Fitting...')
+            estimator.fit(x_train_meta, y_train_meta)
+            print('Predicting on bag set')
+            u = estimator.predict_proba(x_train_bag)[:, 1]
+            train_new_features.append(u)
+            print('Predicting on test set')
+            u = estimator.predict_proba(x_test)[:, 1]
+            test_new_features.append(u)
+            del estimator
+            gc.collect()
+            
+        for i, name in enumerate(names):
+            x_train_bag[name] = train_new_features[i]
+            x_test[name] = test_new_features[i]
+            
+        del x_train_meta, y_train_meta, names, train_new_features, 
+        del test_new_features
+        gc.collect()
+        
+        print('Training outer classifier...')
+        prior = 1.*y_train_bag.sum()/len(y_train_bag)
+        clf.base_score = prior
+        clf.fit(x_train_bag, y_train_bag)
+        print('Predicting on bag set')
+        y_train_pred[bag_id] += clf.predict_proba(x_train_bag)[:, 1]
+    
+        del x_train_bag
+        gc.collect()
+        
+        print('Predicting on test set')
+        y_test_pred += clf.predict_proba(x_test)[:, 1]
+        x_test.drop(meta_estimators.keys(), axis=1, inplace=True)
+        
+    
+    y_train_pred /= 1.*(n_cv-1)
+    y_test_pred /= 1.*n_cv
+    test_id = list(x_test.Id.values.ravel())
+    
+    return y_train_pred, y_test_pred, y_train, test_id
     
 if __name__=='__main__':
     print('main')
