@@ -16,7 +16,7 @@ meta_estimator_ada = ensemble.AdaBoostClassifier(base_estimator=
 #meta_estimator_gb = naive_bayes.GaussianNB(priors=[.9942, .0058])
 meta_estimator_xgb = xgb.XGBClassifier(max_depth=7, 
     objective='binary:logistic', learning_rate=0.01, 
-    colsample_bytree=0.4, min_child_weight=1, n_estimators=40, 
+    colsample_bytree=0.4, min_child_weight=1, n_estimators=20, 
     subsample=0.6, reg_alpha=2, reg_lambda=1)
 meta_estimators = {'rf':meta_estimator_rf, 'ext':meta_estimator_ext, 
                    'ada':meta_estimator_ada, 'xgb':meta_estimator_xgb}
@@ -44,5 +44,6 @@ y_test_pred = np.mean(y_test_pred_list, axis=0)
 best_proba, best_mcc, _ = eval_mcc(y_train, y_train_pred, True)
 y_test_hat = (y_test_pred>=best_proba).astype(int)
 
+save_data((y_train_pred, y_test_pred), 'ensembleCV_traintest.pkl')
 save_submission(y_test_hat, 'ensembleCVsubmission4.csv', test_id)
 
