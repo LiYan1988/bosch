@@ -698,6 +698,10 @@ def extremeBayesCV(clf, n_cv, random_state):
     
     kf = model_selection.StratifiedKFold(n_splits=n_cv, shuffle=True, 
                                          random_state=np.random.randint(10000))
+
+    cols = list(x_train.columns)
+    cols.remove('Id')    
+    cols = np.random.choice(cols[:180], 20, replace=False)
     
     for bag_id, meta_id in kf.split(x_train, y_train):
         x_train_meta = x_train.iloc[meta_id].copy()
@@ -711,11 +715,6 @@ def extremeBayesCV(clf, n_cv, random_state):
         
         x_test_copy = x_test.copy()
         
-        cols = list(x_train_meta.columns)
-        cols.remove('Id')
-        cols.remove('Response')
-        
-        cols = np.random.choice(cols[:180], 20, replace=False)
         for i, c in enumerate(cols):
             print 'column {}, {}'.format(i, c)
             b = x_train_meta.groupby(c)['Response'].mean().reset_index()
