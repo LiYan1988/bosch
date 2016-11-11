@@ -101,7 +101,7 @@ y_train_pred_list = []
 y_test_pred_list = []
 n_rep = 10
 n_cv = 2
-np.random.seed(0)
+np.random.seed(10)
 for i in range(n_rep):
     y_train_pred, y_test_pred, y_train, test_id = \
         extremeBayesCV(clf, n_cv, np.random.randint(10000))
@@ -116,5 +116,5 @@ y_test_hat = (y_test_pred>=best_proba).astype(int)
 
 best_proba, best_mcc, _ = eval_mcc(y_train, y_train_pred, True)
 y_test_hat = (y_test_pred>=best_proba).astype(int)
-save_submission(y_test_hat, 'extremeBayesCVsubmission1.csv', test_id)
-save_data((y_train_pred, y_test_pred), 'extremeBayesCV_train_test1.pkl')
+save_submission(y_test_hat, 'extremeBayesCVsubmission2.csv', test_id)
+save_data((y_train_pred, y_test_pred), 'extremeBayesCV_train_test2.pkl')

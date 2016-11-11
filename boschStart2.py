@@ -715,6 +715,7 @@ def extremeBayesCV(clf, n_cv, random_state):
         cols.remove('Id')
         cols.remove('Response')
         
+        cols = np.random.choice(cols[:180], 20, replace=False)
         for i, c in enumerate(cols):
             print 'column {}, {}'.format(i, c)
             b = x_train_meta.groupby(c)['Response'].mean().reset_index()
